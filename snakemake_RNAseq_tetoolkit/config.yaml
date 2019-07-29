@@ -1,0 +1,27 @@
+SAMPLES: ["wt_RNAseq_Rep1",
+          "hta6_RNAseq_Rep1",
+          "hta7_RNAseq_Rep1",
+          "cmt3_RNAseq_Rep1",
+          "hta6_hta7_RNAseq_Rep1",
+          "hta7_cmt3_RNAseq_Rep1",
+          "hta6_hta7_cmt3_RNAseq_Rep1",
+          "wt_RNAseq_Rep2",
+          "hta6_RNAseq_Rep2",
+          "hta7_RNAseq_Rep2",
+          "cmt3_RNAseq_Rep2",
+          "hta6_hta7_RNAseq_Rep2",
+          "hta7_cmt3_RNAseq_Rep2",
+          "hta6_hta7_cmt3_RNAseq_Rep2"]
+TREATMENT: ["hta6"]
+CONTROL: ["wt"]
+ANNOTATION:
+  gene_GTF: "annotation/Araport11_GFF3_genes_transposons.201606.gtf"
+  TE_GTF: "annotation/TAIR10_TE_TEToolkit.gtf"
+MAPPING:
+  stranded: "yes"
+  mode: "multi"
+  minread: 1
+  iteration: 100
+DESEQ2:
+  FDR: 0.05
+  foldchange: 1.0
