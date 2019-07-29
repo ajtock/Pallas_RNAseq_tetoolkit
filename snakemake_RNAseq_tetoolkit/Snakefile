@@ -1,0 +1,63 @@
+# Snakemake workflow using TEToolkit to quantify transcript abundances
+# at genes and transposable elements (TEs), utilising
+# uniquely and ambiguously mapped reads
+
+# Usage (snakemake --cores should reflect available threads and be
+# consistent with threads specified in config.yaml)
+# conda env create --name RNAseq_tetoolkit --file environment.yaml
+# source activate RNAseq_tetoolkit
+# snakemake -p --cores 48
+# conda deactivate
+
+# To make rules with a shell script invoked using the "shell" directive,
+# we need to determine the base path of Snakefile since we expect the
+# scripts directory to be there as well
+SRCDIR = srcdir("")
+
+# Specify config file parameters
+configfile: "config.yaml"
+sample = config["SAMPLES"]
+mode   = config["MAPPING"]["mode"]
+
+rule all:
+    input:
+        expand("TEcounts/{mode}/TEcounts_{mode}_{sample}.cntTable",
+               mode   = mode,
+               sample = sample)
+
+# Obtain transcript abundances at genes and TEs and perform
+# differential expression analysis 
+rule TEcounts:
+    """Run TEcounts to obtain transcript abundances at genes and TEs"""
+    input:
+        mapped = "mapped/{sample}_Aligned.out.bam",
+        gene_GTF  = config["ANNOTATION"]["gene_GTF"],
+        TE_GTF    = config["ANNOTATION"]["TE_GTF"]
+    output:
+        protected("TEcounts/{mode}/TEcounts_{mode}_{sample}.cntTable")
+    params:
+        project    = "TEcounts/{mode}/TEcounts_{mode}_{sample}",
+        stranded   = config["MAPPING"]["stranded"],
+        mode       = config["MAPPING"]["mode"],
+        iteration  = config["MAPPING"]["iteration"]
+    log:
+        "logs/TEcounts/{mode}/TEcounts_{mode}_{sample}.log"
+    shell:
+        "(TEcount --BAM {input.mapped}"
+        "         --GTF {input.gene_GTF}"
+        "         --TE {input.TE_GTF}"
+        "         --format BAM"
+        "         --project {params.project}"
+        "         --stranded {params.stranded}"
+        "         --mode {params.mode}"
+        "         --iteration {params.iteration}"
+        "         --verbose 2) &> {log}"
+#TEcount --BAM mapped/cmt3_RNAseq_Rep1_Aligned.out.bam \
+#        --GTF annotation/Araport11_GFF3_genes_transposons.201606.gtf \
+#        --TE annotation/TAIR10_TE_TEToolkit.gtf \
+#        --format BAM \
+#        --stranded yes \
+#        --project cmt3 \
+#        --mode multi \
+#        --iteration 100 \
+#        --verbose 2

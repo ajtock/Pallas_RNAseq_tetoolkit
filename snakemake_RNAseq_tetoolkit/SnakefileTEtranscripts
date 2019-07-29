@@ -1,0 +1,87 @@
+# Snakemake workflow using TEToolkit to quantify transcript abundances
+# at genes and transposable elements (TEs), utilising
+# uniquely and ambiguously mapped reads
+# The TEtranscripts program combines STAR-generated
+# BAM files for multiple libraies and performs differential expression
+# analysis using DESeq2
+
+# Usage (snakemake --cores should reflect available threads and be
+# consistent with threads specified in config.yaml)
+# conda env create --name RNAseq_tetoolkit --file environment.yaml
+# source activate RNAseq_tetoolkit
+# snakemake -p --cores 48
+# conda deactivate
+
+# To make the per_base_coverage rule work with a shell script invoked using the "shell" directive,
+# we need to determine the base path of Snakefile since we expect the scripts directory to be there as well
+SRCDIR = srcdir("")
+
+# Specify config file parameters
+configfile: "config.yaml"
+treatment  = config["TREATMENT"]
+control    = config["CONTROL"]
+mode       = config["MAPPING"]["mode"]
+FDR        = str(config["DESEQ2"]["FDR"])
+foldchange = str(config["DESEQ2"]["foldchange"])
+
+# Specify the desired end target file(s)
+rule all:
+    input:
+        expand("TEtranscripts/{mode}/FDR{FDR}_FC{foldchange}/TEtranscripts_{mode}_FDR{FDR}_FC{foldchange}_{treatment}_v_{control}_out",
+               mode       = mode,
+               FDR        = FDR,
+               foldchange = foldchange,
+               treatment  = treatment,
+               control    = control)
+
+# Obtain transcript abundances at genes and TEs and perform
+# differential expression analysis 
+rule TEtranscripts:
+    """Run TEtranscripts to obtain transcript abundances at genes"""
+    """and TEs and perform differential expression analysis"""
+    input:
+        treatment1 = "mapped/{treatment}_RNAseq_Rep1_Aligned.out.bam",
+        treatment2 = "mapped/{treatment}_RNAseq_Rep2_Aligned.out.bam",
+        control1   = "mapped/{control}_RNAseq_Rep1_Aligned.out.bam",
+        control2   = "mapped/{control}_RNAseq_Rep2_Aligned.out.bam",
+        gene_GTF  = config["ANNOTATION"]["gene_GTF"],
+        TE_GTF    = config["ANNOTATION"]["TE_GTF"]
+    output:
+        protected("TEtranscripts/{mode}/FDR{FDR}_FC{foldchange}/TEtranscripts_{mode}_FDR{FDR}_FC{foldchange}_{treatment}_v_{control}_out")
+    params:
+        stranded   = config["MAPPING"]["stranded"],
+        mode       = config["MAPPING"]["mode"],
+        minread    = config["MAPPING"]["minread"],
+        iteration  = config["MAPPING"]["iteration"],
+        FDR        = config["DESEQ2"]["FDR"],
+        foldchange = config["DESEQ2"]["foldchange"] 
+    log:
+        "logs/TEtranscripts/{mode}/FDR{FDR}_FC{foldchange}/TEtranscripts_{mode}_FDR{FDR}_FC{foldchange}_{treatment}_v_{control}_out.log"
+    shell:
+        "(TEtranscripts --treatment {input.treatment1} {input.treatment2}"
+        "               --control {input.control1} {input.control2}"
+        "               --GTF {input.gene_GTF}"
+        "               --TE {input.TE_GTF}"
+        "               --format BAM"
+        "               --stranded {params.stranded}"
+        "               --project {output}"
+        "               --mode {params.mode}"
+        "               --minread {params.minread}"
+        "               --iteration {params.iteration}"
+        "               --padj {params.FDR}"
+        "               --foldchange {params.foldchange}"
+        "               --verbose 3) &> {log}"
+
+TEtranscripts --treatment mapped/cmt3_RNAseq_Rep1_Aligned.out.bam mapped/cmt3_RNAseq_Rep2_Aligned.out.bam \
+              --control mapped/wt_RNAseq_Rep1_Aligned.out.bam mapped/wt_RNAseq_Rep2_Aligned.out.bam \
+              --GTF annotation/Araport11_GFF3_genes_transposons.201606.gtf \
+              --TE annotation/TAIR10_TE_TEToolkit.gtf \
+              --format BAM \
+              --stranded yes \
+              --project cmt3_v_wt_out \
+              --mode multi \
+              --minread 1 \
+              --iteration 100 \
+              --padj 0.05 \
+              --foldchange 1 \
+              --verbose 3
