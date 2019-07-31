@@ -221,6 +221,17 @@ res_chr_downReg <- res_chr[!is.na(res_chr$padj) &
 # Sort by increasing log2 fold change estimate
 # (genes with strongest down-regulation at top)
 res_chr_downRegSorted <- res_chr_downReg[order(res_chr_downReg$log2FoldChange),]
+res_chr_downRegSorted_featureIDs <- rownames(res_chr_downRegSorted)
+write.table(res_chr_downRegSorted,
+            file = paste0(outDir, "res_", contrast,
+                          "_FDR", FDRchar, "_L2FC", L2FCchar,
+                          "_chr_downRegSorted_", featureName, ".tsv"),
+            sep = "\t", quote = F)
+write.table(res_chr_downRegSorted_featureIDs,
+            file = paste0(outDir, "res_", contrast,
+                          "_FDR", FDRchar, "_L2FC", L2FCchar,
+                          "_chr_downRegSorted_", featureName, "_featureIDs.txt"),
+            quote = F, row.names = F, col.names = F)
 
 # Subset results table to significant (padj < FDRnum)
 # up-regulated genes (log2FoldChange > L2FC)
@@ -236,4 +247,15 @@ res_chr_upReg <- res_chr[!is.na(res_chr$padj) &
 # (genes with strongest up-regulation at top)
 res_chr_upRegSorted <- res_chr_upReg[order(res_chr_upReg$log2FoldChange,
                                            decreasing = T),]
+res_chr_upRegSorted_featureIDs <- rownames(res_chr_upRegSorted)
+write.table(res_chr_upRegSorted,
+            file = paste0(outDir, "res_", contrast,
+                          "_FDR", FDRchar, "_L2FC", L2FCchar,
+                          "_chr_upRegSorted_", featureName, ".tsv"),
+            sep = "\t", quote = F)
+write.table(res_chr_upRegSorted_featureIDs,
+            file = paste0(outDir, "res_", contrast,
+                          "_FDR", FDRchar, "_L2FC", L2FCchar,
+                          "_chr_upRegSorted_", featureName, "_featureIDs.txt"),
+            quote = F, row.names = F, col.names = F)
 
