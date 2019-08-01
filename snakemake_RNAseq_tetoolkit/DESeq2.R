@@ -199,15 +199,24 @@ plotMA(res_lfcShrink,
                      " and L2FC > "*.(L2FCchar)*" )"))
 if(L2FCnum > 0) {
   abline(h = c(L2FCnum, (L2FCnum)*-1),
-         lwd = 1.5, lty = 2, col = "red")
+         lwd = 1.5, lty = 2, col = "dodgerblue2")
 }
 dev.off()
 
 
 ## Exporting results
+
+res <- data.frame(featureID = as.character(rownames(res)),
+                  baseMean = as.numeric(res$baseMean),
+                  log2FoldChange = as.numeric(res$log2FoldChange),
+                  lfcSE = as.numeric(res$lfcSE),
+                  stat = as.numeric(res$stat),
+                  pvalue = as.numeric(res$pvalue),
+                  padj = as.numeric(res$padj))
+
 # Exclude mitochondrial and chloroplast features
-res_chr <- res[!grepl(pattern = "^ATM", x = rownames(res)) &
-               !grepl(pattern = "^ATC", x = rownames(res)),]
+res_chr <- res[!grepl(pattern = "^ATM", x = res$featureID) &
+               !grepl(pattern = "^ATC", x = res$featureID),]
 # Subset results table to significant (padj < FDRnum)
 # down-regulated genes (log2FoldChange < (L2FC)*-1)
 res_chr_downReg <- res_chr[!is.na(res_chr$padj) &
@@ -220,13 +229,14 @@ res_chr_downReg <- res_chr[!is.na(res_chr$padj) &
 
 # Sort by increasing log2 fold change estimate
 # (genes with strongest down-regulation at top)
-res_chr_downRegSorted <- res_chr_downReg[order(res_chr_downReg$log2FoldChange),]
-res_chr_downRegSorted_featureIDs <- rownames(res_chr_downRegSorted)
+res_chr_downRegSorted <- res_chr_downReg[order(res_chr_downReg$log2FoldChange,
+                                               decreasing = F),]
+res_chr_downRegSorted_featureIDs <- res_chr_downRegSorted$featureID
 write.table(res_chr_downRegSorted,
             file = paste0(outDir, "res_", contrast,
                           "_FDR", FDRchar, "_L2FC", L2FCchar,
                           "_chr_downRegSorted_", featureName, ".tsv"),
-            sep = "\t", quote = F)
+            sep = "\t", quote = F, row.names = F)
 write.table(res_chr_downRegSorted_featureIDs,
             file = paste0(outDir, "res_", contrast,
                           "_FDR", FDRchar, "_L2FC", L2FCchar,
@@ -247,15 +257,21 @@ res_chr_upReg <- res_chr[!is.na(res_chr$padj) &
 # (genes with strongest up-regulation at top)
 res_chr_upRegSorted <- res_chr_upReg[order(res_chr_upReg$log2FoldChange,
                                            decreasing = T),]
-res_chr_upRegSorted_featureIDs <- rownames(res_chr_upRegSorted)
+res_chr_upRegSorted_featureIDs <- res_chr_upRegSorted$featureID
 write.table(res_chr_upRegSorted,
             file = paste0(outDir, "res_", contrast,
                           "_FDR", FDRchar, "_L2FC", L2FCchar,
                           "_chr_upRegSorted_", featureName, ".tsv"),
-            sep = "\t", quote = F)
+            sep = "\t", quote = F, row.names = F)
 write.table(res_chr_upRegSorted_featureIDs,
             file = paste0(outDir, "res_", contrast,
                           "_FDR", FDRchar, "_L2FC", L2FCchar,
                           "_chr_upRegSorted_", featureName, "_featureIDs.txt"),
             quote = F, row.names = F, col.names = F)
+
+
+## Generate plots of log-transformed normalised counts at
+# differentially expressed genes
+
+
 
