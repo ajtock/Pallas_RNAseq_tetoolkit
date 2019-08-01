@@ -66,12 +66,12 @@ print(packageVersion("DESeq2"))
 #[1] ‘1.22.2’
 library(dplyr)
 
-featureDir <- paste0("DESeq2/", featureName, "/") 
-sigDir <- paste0(featureDir, "FDR", FDRchar, "_L2FC", L2FCchar, "/")
-outDir <- paste0(sigDir, contrast, "/")
+sigDir <- paste0("DESeq2/FDR", FDRchar, "_L2FC", L2FCchar, "/")
+contrastDir <- paste0(sigDir, contrast, "/")
+outDir <- paste0(contrastDir, featureName, "/")
 plotDir <- paste0(outDir, "plots/")
-system(paste0("[ -d ", featureDir, " ] || mkdir ", featureDir))
 system(paste0("[ -d ", sigDir, " ] || mkdir ", sigDir))
+system(paste0("[ -d ", contrastDir, " ] || mkdir ", contrastDir))
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
@@ -272,98 +272,98 @@ write.table(res_chr_upRegSorted_featureIDs,
             quote = F, row.names = F, col.names = F)
 
 
-## Generate plots of log-transformed normalised counts at
-# differentially expressed genes
-
-downReg_plotDir <- paste0(plotDir, "downReg_counts/")
-upReg_plotDir <- paste0(plotDir, "upReg_counts/")
-system(paste0("[ -d ", downReg_plotDir, " ] || mkdir ", downReg_plotDir))
-system(paste0("[ -d ", upReg_plotDir, " ] || mkdir ", upReg_plotDir))
-
-library(ggplot2)
-library(ggbeeswarm)
-library(parallel)
-library(org.At.tair.db)
-TAIRsymbol <- org.At.tairSYMBOL
-# Get TAIR gene identifiers that are mapped to a gene symbol
-mapped_featureIDs <- mappedkeys(TAIRsymbol)
-
-res_chr_downRegSorted_featureIDs <- as.character(res_chr_downRegSorted_featureIDs)
-res_chr_upRegSorted_featureIDs <- as.character(res_chr_upRegSorted_featureIDs)
-
-# Count-plotting function
-if(featureName == "genes") {
-  countPlotFun <- function(featureID, contrast, plotDir) {
-    geneCounts <- plotCounts(dds,
-                             gene = featureID,
-                             intgroup = c("condition", "sample"),
-                             normalized = T,
-                             transform = T,
-                             returnData = T)
-    geneCounts$condition <- factor(geneCounts$condition,
-                                   levels = c(geno1, geno2))
-    geneCountsPlot <- ggplot(geneCounts,
-                             aes(x = condition,
-                                 y = count,
-                                 colour = sample)) +
-                      scale_y_log10(breaks = pretty(geneCounts$count)) +
-                      geom_beeswarm(cex = 3) +
-                      xlab("Genotype") +
-                      ylab("Log-transformed normalized count") +
-                      labs(colour = "Sample") +
-                      theme(plot.margin = grid::unit(c(0,0,0,0), "mm")) +
-                      theme_classic() +
-                      theme(panel.border = element_rect(colour = "black", fill = NA, size =1)) +
-                      ggtitle(paste0(featureID, " (", TAIRsymbol[[featureID]][1], ")")) +
-                      theme(plot.title = element_text(hjust = 0.5))
-    ggsave(geneCountsPlot,
-           file = paste0(plotDir, contrast, "_", featureID, "_", gsub("/", "|", TAIRsymbol[[featureID]][1]), "_normalized_counts.pdf"),
-           width = 16, height = 10, units = "cm")
-  }
-} else if(featureName == "TEs") {
-  countPlotFun <- function(featureID, contrast, plotDir) {
-    geneCounts <- plotCounts(dds,
-                             gene = featureID,
-                             intgroup = c("condition", "sample"),
-                             normalized = T,
-                             transform = T,
-                             returnData = T)
-    geneCounts$condition <- factor(geneCounts$condition,
-                                   levels = c(geno1, geno2))
-    geneCountsPlot <- ggplot(geneCounts,
-                             aes(x = condition,
-                                 y = count,
-                                 colour = sample)) +
-                      scale_y_log10(breaks = pretty(geneCounts$count)) +
-                      geom_beeswarm(cex = 3) +
-                      xlab("Genotype") +
-                      ylab("Log-transformed normalized count") +
-                      labs(colour = "Sample") +
-                      theme(plot.margin = grid::unit(c(0,0,0,0), "mm")) +
-                      theme_classic() +
-                      theme(panel.border = element_rect(colour = "black", fill = NA, size =1)) +
-                      ggtitle(featureID) +
-                      theme(plot.title = element_text(hjust = 0.5))
-    ggsave(geneCountsPlot,
-           file = paste0(plotDir, contrast, "_", featureID, "_normalized_counts.pdf"),
-           width = 16, height = 10, units = "cm")
-  }
-} else {
-  stop("featureName is neither genes nor TEs")
-}
-
-# Apply plotting function to each downregulated and upregulated feature
-mclapply(seq_along(res_chr_downRegSorted_featureIDs), function(x) {
-  countPlotFun(featureID = as.character(res_chr_downRegSorted_featureIDs[x]),
-               contrast = paste0(contrast, "_",
-                                 "_FDR", FDRchar, "_L2FC", L2FCchar,
-                                 "_chr_downReg"),
-               plotDir = downReg_plotDir)
-}, mc.cores = detectCores())
-mclapply(seq_along(res_chr_upRegSorted_featureIDs), function(x) {
-  countPlotFun(featureID = as.character(res_chr_upRegSorted_featureIDs[x]),
-               contrast = paste0(contrast, "_",
-                                 "_FDR", FDRchar, "_L2FC", L2FCchar,
-                                 "_chr_upReg"),
-               plotDir = upReg_plotDir)
-}, mc.cores = detectCores())
+### Generate plots of log-transformed normalised counts at
+## differentially expressed genes
+#
+#downReg_plotDir <- paste0(plotDir, "downReg_counts/")
+#upReg_plotDir <- paste0(plotDir, "upReg_counts/")
+#system(paste0("[ -d ", downReg_plotDir, " ] || mkdir ", downReg_plotDir))
+#system(paste0("[ -d ", upReg_plotDir, " ] || mkdir ", upReg_plotDir))
+#
+#library(ggplot2)
+#library(ggbeeswarm)
+#library(parallel)
+#library(org.At.tair.db)
+#TAIRsymbol <- org.At.tairSYMBOL
+## Get TAIR gene identifiers that are mapped to a gene symbol
+#mapped_featureIDs <- mappedkeys(TAIRsymbol)
+#
+#res_chr_downRegSorted_featureIDs <- as.character(res_chr_downRegSorted_featureIDs)
+#res_chr_upRegSorted_featureIDs <- as.character(res_chr_upRegSorted_featureIDs)
+#
+## Count-plotting function
+#if(featureName == "genes") {
+#  countPlotFun <- function(featureID, contrast, plotDir) {
+#    geneCounts <- plotCounts(dds,
+#                             gene = featureID,
+#                             intgroup = c("condition", "sample"),
+#                             normalized = T,
+#                             transform = T,
+#                             returnData = T)
+#    geneCounts$condition <- factor(geneCounts$condition,
+#                                   levels = c(geno1, geno2))
+#    geneCountsPlot <- ggplot(geneCounts,
+#                             aes(x = condition,
+#                                 y = count,
+#                                 colour = sample)) +
+#                      scale_y_log10(breaks = pretty(geneCounts$count)) +
+#                      geom_beeswarm(cex = 3) +
+#                      xlab("Genotype") +
+#                      ylab("Log-transformed normalized count") +
+#                      labs(colour = "Sample") +
+#                      theme(plot.margin = grid::unit(c(0,0,0,0), "mm")) +
+#                      theme_classic() +
+#                      theme(panel.border = element_rect(colour = "black", fill = NA, size =1)) +
+#                      ggtitle(paste0(featureID, " (", TAIRsymbol[[featureID]][1], ")")) +
+#                      theme(plot.title = element_text(hjust = 0.5))
+#    ggsave(geneCountsPlot,
+#           file = paste0(plotDir, contrast, "_", featureID, "_", gsub("/", "|", TAIRsymbol[[featureID]][1]), "_normalized_counts.pdf"),
+#           width = 16, height = 10, units = "cm")
+#  }
+#} else if(featureName == "TEs") {
+#  countPlotFun <- function(featureID, contrast, plotDir) {
+#    geneCounts <- plotCounts(dds,
+#                             gene = featureID,
+#                             intgroup = c("condition", "sample"),
+#                             normalized = T,
+#                             transform = T,
+#                             returnData = T)
+#    geneCounts$condition <- factor(geneCounts$condition,
+#                                   levels = c(geno1, geno2))
+#    geneCountsPlot <- ggplot(geneCounts,
+#                             aes(x = condition,
+#                                 y = count,
+#                                 colour = sample)) +
+#                      scale_y_log10(breaks = pretty(geneCounts$count)) +
+#                      geom_beeswarm(cex = 3) +
+#                      xlab("Genotype") +
+#                      ylab("Log-transformed normalized count") +
+#                      labs(colour = "Sample") +
+#                      theme(plot.margin = grid::unit(c(0,0,0,0), "mm")) +
+#                      theme_classic() +
+#                      theme(panel.border = element_rect(colour = "black", fill = NA, size =1)) +
+#                      ggtitle(featureID) +
+#                      theme(plot.title = element_text(hjust = 0.5))
+#    ggsave(geneCountsPlot,
+#           file = paste0(plotDir, contrast, "_", featureID, "_normalized_counts.pdf"),
+#           width = 16, height = 10, units = "cm")
+#  }
+#} else {
+#  stop("featureName is neither genes nor TEs")
+#}
+#
+## Apply plotting function to each downregulated and upregulated feature
+#mclapply(seq_along(res_chr_downRegSorted_featureIDs), function(x) {
+#  countPlotFun(featureID = as.character(res_chr_downRegSorted_featureIDs[x]),
+#               contrast = paste0(contrast, "_",
+#                                 "_FDR", FDRchar, "_L2FC", L2FCchar,
+#                                 "_chr_downReg"),
+#               plotDir = downReg_plotDir)
+#}, mc.cores = detectCores())
+#mclapply(seq_along(res_chr_upRegSorted_featureIDs), function(x) {
+#  countPlotFun(featureID = as.character(res_chr_upRegSorted_featureIDs[x]),
+#               contrast = paste0(contrast, "_",
+#                                 "_FDR", FDRchar, "_L2FC", L2FCchar,
+#                                 "_chr_upReg"),
+#               plotDir = upReg_plotDir)
+#}, mc.cores = detectCores())
