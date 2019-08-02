@@ -26,13 +26,11 @@
 # Differentially expressed genes were identified using DESeq2 version 1.22.2, using untransformed expression value in accordance with DESeq2 model-fitting assumptions. Genes with more than one read across all samples within a contrast were retained. Additional filtering of genes with low mean read counts was automatically applied by DESeq2. For each contrast, differentially expressed genes with BH-adjusted P-values <0.05 were identified. Log2 fold change in gene expression was plotted against the mean of read counts normalized by library size for each gene in MA plots. A Bayesian method implemented in DESeq2 was used to moderate the log2 fold changes obtained for genes with low or variable expression levels. Up-regulated and down-regulated genes in each mutant were evaluated for enrichment of genes up-regulated in wild type meiocytes compared to leaves (BH-adjusted P<0.01) using the hypergeometric distribution. Genes representing the intersection of those down-regulated, or up-regulated, in each mutant (BH-adjusted P<0.05) and up-regulated in meiocytes (BH-adjusted P<0.01), were analyzed for gene ontology (GO) term enrichment. Gene sets were analyzed for over-representation of “biological process” GO terms relative to their representation among all genes in the TAIR10 annotation, using topGO (version 2.26.0) [75]. Significantly enriched terms were identified by applying the default topGO algorithm coupled with the Fisher’s exact test statistic (P≤0.05). 
 
 # Usage:
-# ./DESeq2.R TEcount multi 'cmt3_RNAseq_Rep1,cmt3_RNAseq_Rep2,wt_RNAseq_Rep1,wt_RNAseq_Rep2' 'cmt3_Rep1,cmt3_Rep2,wt_Rep1,wt_Rep2' 0.05 0.0 genes
+# ./DESeq2.R TEcount multi 'cmt3_RNAseq_Rep1,cmt3_RNAseq_Rep2,wt_RNAseq_Rep1,wt_RNAseq_Rep2' 0.05 0.0 genes
 
 #tool <- "TEcount"
 #mode <- "multi"
 #prefixes <- unlist(strsplit("cmt3_RNAseq_Rep1,cmt3_RNAseq_Rep2,wt_RNAseq_Rep1,wt_RNAseq_Rep2",
-#                            split = ","))
-#libNames <- unlist(strsplit("cmt3_Rep1,cmt3_Rep2,wt_Rep1,wt_Rep2",
 #                            split = ","))
 #FDRnum <- 0.05
 #FDRchar <- "0.05"
@@ -45,20 +43,21 @@ tool <- args[1]
 mode <- args[2]
 prefixes <- unlist(strsplit(args[3],
                             split = ","))
-libNames <- unlist(strsplit(args[4],
-                            split = ","))
-FDRnum <- as.numeric(args[5])
-FDRchar <- as.character(args[5])
-L2FCnum <- as.numeric(args[6])
-L2FCchar <- as.character(args[6])
-featureName <- args[7]
+FDRnum <- as.numeric(args[4])
+FDRchar <- as.character(args[4])
+L2FCnum <- as.numeric(args[5])
+L2FCchar <- as.character(args[5])
+featureName <- args[6]
 
+libNames <- sub(pattern = "_RNAseq",
+                replacement = "",
+                x = prefixes)
 geno1 <- sub(pattern = "_Rep\\d",
              replacement = "",
              x = libNames[1])
 geno2 <- sub(pattern = "_Rep\\d",
              replacement = "",
-             x = libNames[3])
+             x = libNames[length(libNames)])
 contrast <- paste0(geno1, "_v_", geno2)
 
 library(DESeq2)
@@ -116,9 +115,12 @@ print("Features:")
 print(nrow(df))
 #[1] 37336
 
-# Create table of sample names and conditions
+# Create table of sample names, conditions and replicates
 sampleTable <- data.frame(sample = libNames,
                           condition = factor(sub(pattern = "_Rep\\d",
+                                                 replacement = "",
+                                                 x = libNames)),
+                          replicate = factor(sub(pattern = "^\\w+_",
                                                  replacement = "",
                                                  x = libNames)))
 rownames(sampleTable) <- colnames(df)
@@ -133,10 +135,11 @@ print("Features with > 1 read count across all samples:")
 print(nrow(df))
 #[1] 36344
 
-# Create DESeqDataSet (dds)
+# Create DESeqDataSet (dds), including the replicate (batch) factor
+# in the design to increase the sensitivity for finding differences due to condition
 dds <- DESeqDataSetFromMatrix(countData = df,
                               colData = sampleTable,
-                              design = ~ condition)
+                              design = ~ replicate + condition)
 
 # Fit model
 dds_fit <- DESeq(dds)
@@ -198,7 +201,7 @@ plotMA(res_lfcShrink,
        main = bquote(.(geno1)*" vs "*.(geno2)*
                      " ("*.(featureName)*
                      " with FDR < "*.(FDRchar)*
-                     " and L2FC > "*.(L2FCchar)*" )"))
+                     " and L2FC > "*.(L2FCchar)*")"))
 if(L2FCnum > 0) {
   abline(h = c(L2FCnum, (L2FCnum)*-1),
          lwd = 1.5, lty = 2, col = "dodgerblue2")

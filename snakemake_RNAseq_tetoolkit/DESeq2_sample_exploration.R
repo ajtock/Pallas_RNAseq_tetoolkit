@@ -27,17 +27,12 @@
 # for visualization and ranking of genes." (see https://support.bioconductor.org/p/95695/ and
 # https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#changes)
 
-
-#Differentially expressed genes were identified using DESeq2 version 1.16.1 [74], using untransformed expression. Genes with more than one read across all samples within a contrast were retained. Additional filtering of genes with low mean read counts was automatically applied by DESeq2. For each contrast, differentially expressed genes with BH-adjusted P-values <0.01 were identified. Log2 fold change in gene expression was plotted against the mean of read counts normalized by library size for each gene in MA plots. A Bayesian method implemented in DESeq2 was used to moderate the log2 fold changes obtained for genes with low or variable expression levels. Up-regulated and down-regulated genes in taf4b-1 were evaluated for enrichment of genes up-regulated in wild type meiocytes compared to leaves (BH-adjusted P<0.01) using the hypergeometric distribution. Genes representing the intersection of those down-regulated, or up-regulated, in taf4b-1 (BH-adjusted P<0.01) and up-regulated in meiocytes (BH-adjusted P<0.01), were analyzed for gene ontology (GO) term enrichment. Gene sets were analyzed for over-representation of “biological process” GO terms relative to their representation among all genes in the TAIR10 annotation, using topGO (version 2.26.0) [75]. Significantly enriched terms were identified by applying the default topGO algorithm coupled with the Fisher’s exact test statistic (P≤0.05). 
-
 # Usage:
-# ./DESeq2_sample_exploration.R TEcount multi 'wt_RNAseq_Rep1,wt_RNAseq_Rep2,cmt3_RNAseq_Rep1,cmt3_RNAseq_Rep2,hta6_RNAseq_Rep1,hta6_RNAseq_Rep2,hta6_hta7_RNAseq_Rep1,hta6_hta7_RNAseq_Rep2,hta7_cmt3_RNAseq_Rep1,hta7_cmt3_RNAseq_Rep2,hta6_hta7_cmt3_RNAseq_Rep1,hta6_hta7_cmt3_RNAseq_Rep2' 'wt_Rep1,wt_Rep2,cmt3_Rep1,cmt3_Rep2,hta6_Rep1,hta6_Rep2,hta6hta7_Rep1,hta6hta7_Rep2,hta7cmt3_Rep1,hta7cmt3_Rep2,hta6hta7cmt3_Rep1,hta6hta7cmt3_Rep2'
+# ./DESeq2_sample_exploration.R TEcount multi 'wt_RNAseq_Rep1,wt_RNAseq_Rep2,cmt3_RNAseq_Rep1,cmt3_RNAseq_Rep2,hta6_RNAseq_Rep1,hta6_RNAseq_Rep2,hta6_hta7_RNAseq_Rep1,hta6_hta7_RNAseq_Rep2,hta7_cmt3_RNAseq_Rep1,hta7_cmt3_RNAseq_Rep2,hta6_hta7_cmt3_RNAseq_Rep1,hta6_hta7_cmt3_RNAseq_Rep2'
 
 #tool <- "TEcount"
 #mode <- "multi"
 #prefixes <- unlist(strsplit("wt_RNAseq_Rep1,wt_RNAseq_Rep2,cmt3_RNAseq_Rep1,cmt3_RNAseq_Rep2,hta6_RNAseq_Rep1,hta6_RNAseq_Rep2,hta6_hta7_RNAseq_Rep1,hta6_hta7_RNAseq_Rep2,hta7_cmt3_RNAseq_Rep1,hta7_cmt3_RNAseq_Rep2,hta6_hta7_cmt3_RNAseq_Rep1,hta6_hta7_cmt3_RNAseq_Rep2",
-#                            split = ","))
-#libNames <- unlist(strsplit("wt_Rep1,wt_Rep2,cmt3_Rep1,cmt3_Rep2,hta6_Rep1,hta6_Rep2,hta6hta7_Rep1,hta6hta7_Rep2,hta7cmt3_Rep1,hta7cmt3_Rep2,hta6hta7cmt3_Rep1,hta6hta7cmt3_Rep2",
 #                            split = ","))
 
 args <- commandArgs(trailingOnly = T)
@@ -45,8 +40,9 @@ tool <- args[1]
 mode <- args[2]
 prefixes <- unlist(strsplit(args[3],
                             split = ","))
-libNames <- unlist(strsplit(args[4],
-                            split = ","))
+libNames <- sub(pattern = "_RNAseq",
+                replacement = "",
+                x = prefixes)
 
 library(DESeq2)
 print(packageVersion("DESeq2"))
@@ -91,6 +87,9 @@ print(nrow(df))
 sampleTable <- data.frame(sample = libNames,
                           condition = factor(sub(pattern = "_Rep\\d",
                                                  replacement = "",
+                                                 x = libNames)),
+                          replicate = factor(sub(pattern = "^\\w+_",
+                                                 replacement = "",
                                                  x = libNames)))
 rownames(sampleTable) <- colnames(df)
 print(sampleTable)
@@ -107,7 +106,7 @@ print(nrow(df))
 # Create DESeqDataSet (dds)
 dds <- DESeqDataSetFromMatrix(countData = df,
                               colData = sampleTable,
-                              design = ~ condition)
+                              design = ~ replicate + condition)
 
 ## The rlog and variance stabilizing transformations
 # see http://www.bioconductor.org/help/workflows/rnaseqGene/#the-rlog-and-variance-stabilizing-transformations
@@ -216,6 +215,8 @@ PCAggplot_rlog <- ggplot(PCAplot_rlog_data,
                              colour = sample)) +
                   geom_point(size = 3) +
                   scale_shape_manual(values = c(3, 8, 9, 15, 16, 17)) +
+                  guides(colour = guide_legend(order = 2),
+                         shape = guide_legend(order = 1)) +
                   xlab(paste0("PC1: ", percentVar[1], "% variance")) +
                   ylab(paste0("PC2: ", percentVar[2], "% variance")) +
                   theme(plot.margin = grid::unit(c(0,0,0,0), "mm")) +
@@ -237,6 +238,8 @@ MDSplot_rlog <- ggplot(mds, aes(x = `1`, y = `2`,
                                 colour = sample)) +
                   geom_point(size = 3) +
                   scale_shape_manual(values = c(3, 8, 9, 15, 16, 17)) +
+                  guides(colour = guide_legend(order = 2),
+                         shape = guide_legend(order = 1)) +
                   theme(plot.margin=grid::unit(c(0,0,0,0), "mm")) +
                   theme_classic() +
                   theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
@@ -252,6 +255,8 @@ MDSplot_Pois <- ggplot(mdsPois, aes(x = `1`, y = `2`,
                                     colour = sample)) +
                   geom_point(size = 3) +
                   scale_shape_manual(values = c(3, 8, 9, 15, 16, 17)) +
+                  guides(colour = guide_legend(order = 2),
+                         shape = guide_legend(order = 1)) +
                   theme(plot.margin=grid::unit(c(0,0,0,0), "mm")) +
                   theme_classic() +
                   theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
@@ -259,17 +264,170 @@ MDSplot_Pois <- ggplot(mdsPois, aes(x = `1`, y = `2`,
 ggsave(MDSplot_Pois,
        file = paste0(plotDir, "MDSplot_Pois_genes_TEs.pdf"), height= 20, width = 20, units = "cm")
 
+
+# Visualise the overall effect of experimental covariates and replicate (batch) effects
+# PCA plots for visualising sample-to-sample distances
+PCAplot_rlog <- DESeq2::plotPCA(rld, intgroup = c("condition", "replicate")) +
+                  theme(plot.margin = grid::unit(c(0,0,0,0), "mm")) +
+                  theme_classic() +
+                  theme(panel.border = element_rect(colour = "black",
+                                                    fill = NA,
+                                                    size = 1)) +
+                  coord_fixed()
+ggsave(PCAplot_rlog,
+       file = paste0(plotDir, "PCAplot_rlog_genes_TEs_batchEffects.pdf"),
+       width = 20, height = 20, units = "cm")
+
+PCAplot_rlog_data <- DESeq2::plotPCA(rld, intgroup = c("condition", "replicate"),
+                                     returnData = T)
+print(PCAplot_rlog_data)
+# Obtain percentage variance explained by PC1 and PC2 for plotting using ggplot2
+percentVar <- round(100 * attr(PCAplot_rlog_data, "percentVar"))
+
+PCAggplot_rlog <- ggplot(PCAplot_rlog_data,
+                         aes(x = PC1, y = PC2,
+                             shape = condition,
+                             colour = replicate)) +
+                  geom_point(size = 3) +
+                  scale_shape_manual(values = c(3, 8, 9, 15, 16, 17)) +
+                  guides(colour = guide_legend(order = 2),
+                         shape = guide_legend(order = 1)) +
+                  xlab(paste0("PC1: ", percentVar[1], "% variance")) +
+                  ylab(paste0("PC2: ", percentVar[2], "% variance")) +
+                  theme(plot.margin = grid::unit(c(0,0,0,0), "mm")) +
+                  theme_classic() +
+                  theme(panel.border = element_rect(colour = "black",
+                                                    fill = NA,
+                                                    size = 1)) +
+                  coord_fixed()
+ggsave(PCAggplot_rlog,
+       file = paste0(plotDir, "PCAggplot_rlog_genes_TEs_batchEffects.pdf"),
+       height = 20, width = 20, units = "cm")
+
+# MDS (multi-dimensional scaling) plots for visualising sample-to-sample distances
+# rlog-transformed counts
+mds <- as.data.frame(colData(rld)) %>%
+         cbind(cmdscale(sampleDistMatrix))
+MDSplot_rlog <- ggplot(mds, aes(x = `1`, y = `2`,
+                                shape = condition,
+                                colour = replicate)) +
+                  geom_point(size = 3) +
+                  scale_shape_manual(values = c(3, 8, 9, 15, 16, 17)) +
+                  guides(colour = guide_legend(order = 2),
+                         shape = guide_legend(order = 1)) +
+                  theme(plot.margin=grid::unit(c(0,0,0,0), "mm")) +
+                  theme_classic() +
+                  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+                  coord_fixed()
+ggsave(MDSplot_rlog,
+       file = paste0(plotDir, "MDSplot_rlog_genes_TEs_batchEffects.pdf"), height= 20, width = 20, units = "cm")
+
+# Poisson distance
+mdsPois <- as.data.frame(colData(dds)) %>%
+             cbind(cmdscale(samplePoisDistMatrix))
+MDSplot_Pois <- ggplot(mdsPois, aes(x = `1`, y = `2`,
+                                    shape = condition,
+                                    colour = replicate)) +
+                  geom_point(size = 3) +
+                  scale_shape_manual(values = c(3, 8, 9, 15, 16, 17)) +
+                  guides(colour = guide_legend(order = 2),
+                         shape = guide_legend(order = 1)) +
+                  theme(plot.margin=grid::unit(c(0,0,0,0), "mm")) +
+                  theme_classic() +
+                  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+                  coord_fixed()
+ggsave(MDSplot_Pois,
+       file = paste0(plotDir, "MDSplot_Pois_genes_TEs_batchEffects.pdf"), height= 20, width = 20, units = "cm")
+
 # feature clustering
 # Clustering of 20 features with greatest rlog-transformed variance across samples
 library(genefilter)
 topVarfeatures <- head(order(rowVars(assay(rld)), decreasing = T), 20)
 mat <- assay(rld)[topVarfeatures, ]
 mat <- mat - rowMeans(mat)
-anno <- as.data.frame(colData(rld)[, c("sample", "condition")])
+anno <- as.data.frame(colData(rld)[, c("sample", "condition", "replicate")])
 pdf(paste0(plotDir, "feature_clustering_rld_topVar20_genes_TEs.pdf"), height = 5, width = 7.5, onefile = F)
 pheatmap(mat, annotation_col = anno)
 dev.off()
 
+# Visualise the overall effect of experimental covariates after removing
+# replicate (batch) effects
+# PCA plots for visualising sample-to-sample distances
+library(limma)
+assayrld <- assay(rld)
+assayrld <- limma::removeBatchEffect(assayrld, rld$replicate)
+assay(rld) <- assayrld
+PCAplot_rlog <- DESeq2::plotPCA(rld, intgroup = c("condition", "sample")) +
+                  theme(plot.margin = grid::unit(c(0,0,0,0), "mm")) +
+                  theme_classic() +
+                  theme(panel.border = element_rect(colour = "black",
+                                                    fill = NA,
+                                                    size = 1)) +
+                  coord_fixed()
+ggsave(PCAplot_rlog,
+       file = paste0(plotDir, "PCAplot_rlog_genes_TEs_batchEffectsRemoved.pdf"),
+       width = 20, height = 20, units = "cm")
+
+PCAplot_rlog_data <- DESeq2::plotPCA(rld, intgroup = c("condition", "sample"),
+                                     returnData = T)
+print(PCAplot_rlog_data)
+# Obtain percentage variance explained by PC1 and PC2 for plotting using ggplot2
+percentVar <- round(100 * attr(PCAplot_rlog_data, "percentVar"))
+
+PCAggplot_rlog <- ggplot(PCAplot_rlog_data,
+                         aes(x = PC1, y = PC2,
+                             shape = condition,
+                             colour = sample)) +
+                  geom_point(size = 3) +
+                  scale_shape_manual(values = c(3, 8, 9, 15, 16, 17)) +
+                  guides(colour = guide_legend(order = 2),
+                         shape = guide_legend(order = 1)) +
+                  xlab(paste0("PC1: ", percentVar[1], "% variance")) +
+                  ylab(paste0("PC2: ", percentVar[2], "% variance")) +
+                  theme(plot.margin = grid::unit(c(0,0,0,0), "mm")) +
+                  theme_classic() +
+                  theme(panel.border = element_rect(colour = "black",
+                                                    fill = NA,
+                                                    size = 1)) +
+                  coord_fixed()
+ggsave(PCAggplot_rlog,
+       file = paste0(plotDir, "PCAggplot_rlog_genes_TEs_batchEffectsRemoved.pdf"),
+       height = 20, width = 20, units = "cm")
+
+# MDS (multi-dimensional scaling) plots for visualising sample-to-sample distances
+# rlog-transformed counts
+mds <- as.data.frame(colData(rld)) %>%
+         cbind(cmdscale(sampleDistMatrix))
+MDSplot_rlog <- ggplot(mds, aes(x = `1`, y = `2`,
+                                shape = condition,
+                                colour = sample)) +
+                  geom_point(size = 3) +
+                  scale_shape_manual(values = c(3, 8, 9, 15, 16, 17)) +
+                  guides(colour = guide_legend(order = 2),
+                         shape = guide_legend(order = 1)) +
+                  theme(plot.margin=grid::unit(c(0,0,0,0), "mm")) +
+                  theme_classic() +
+                  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+                  coord_fixed()
+ggsave(MDSplot_rlog,
+       file = paste0(plotDir, "MDSplot_rlog_genes_TEs_batchEffectsRemoved.pdf"), height= 20, width = 20, units = "cm")
+
+# Sample distances using the rlog-transformed counts
+sampleDists <- dist(t(assay(rld)))
+print(sampleDists)
+
+# Heatmap of sample distances using the rlog-transformed counts
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- as.vector(sampleTable$sample)
+colnames(sampleDistMatrix) <- NULL
+mycols <- colorRampPalette(rev(brewer.pal(9, "Blues")))(255)
+pdf(paste0(plotDir, "sample_distances_heatmap_rlog_genes_TEs_batchEffectsRemoved.pdf"),
+    height = 5, width = 7.5, onefile = F)
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows = sampleDists,
+         clustering_distance_cols = sampleDists,
+         col = mycols)
+dev.off()
 
 ################
 #dds$groups = relevel(dds$groups,"CGroup")
