@@ -21,27 +21,27 @@ mode   = config["MAPPING"]["mode"]
 
 rule all:
     input:
-        expand("TEcounts/{mode}/TEcounts_{mode}_{sample}.cntTable",
+        expand("TEcount/{mode}/TEcount_{mode}_{sample}.cntTable",
                mode   = mode,
                sample = sample)
 
 # Obtain transcript abundances at genes and TEs and perform
 # differential expression analysis 
-rule TEcounts:
-    """Run TEcounts to obtain transcript abundances at genes and TEs"""
+rule TEcount:
+    """Run TEcount to obtain transcript abundances at genes and TEs"""
     input:
         mapped = "mapped/{sample}_Aligned.out.bam",
         gene_GTF  = config["ANNOTATION"]["gene_GTF"],
         TE_GTF    = config["ANNOTATION"]["TE_GTF"]
     output:
-        protected("TEcounts/{mode}/TEcounts_{mode}_{sample}.cntTable")
+        protected("TEcount/{mode}/TEcount_{mode}_{sample}.cntTable")
     params:
-        project    = "TEcounts/{mode}/TEcounts_{mode}_{sample}",
+        project    = "TEcount/{mode}/TEcount_{mode}_{sample}",
         stranded   = config["MAPPING"]["stranded"],
         mode       = config["MAPPING"]["mode"],
         iteration  = config["MAPPING"]["iteration"]
     log:
-        "logs/TEcounts/{mode}/TEcounts_{mode}_{sample}.log"
+        "logs/TEcount/{mode}/TEcount_{mode}_{sample}.log"
     shell:
         "(TEcount --BAM {input.mapped}"
         "         --GTF {input.gene_GTF}"
