@@ -11,7 +11,7 @@
 # Doesn't work with mclapply or dopar
 
 # Example usage:
-# ./topGO_DEGs_TAIR10_GO_GOSLIM_030418_incl_weight.R BP 0.05 up FDR0.05_L2FC0.0
+# /applications/R/R-3.3.2/bin/Rscript ./topGO_DEGs_TAIR10_GO_GOSLIM_030418_incl_weight.R BP 0.05 up 'FDR0.05_L2FC0.0'
 
 #ont <- "BP"
 #sigLevel <- 0.05
