@@ -1,4 +1,4 @@
-#!/applications/R/R-3.5.0/bin/Rscript
+#!/applications/R/R-4.0.0/bin/Rscript
 
 # For each stranded paired-end library, reads were aligned to the
 # TAIR10 reference genome using STAR version 2.7.0d.
@@ -13,10 +13,13 @@
 # single expression estimate for each parent gene and TE identifier.
 
 # This script performs differential expression analysis using
-# DESeq2 version 1.22.2
+## DESeq2 version 1.22.2
+# DESeq2 version 1.28.0
 
-# R version 3.5.0
-# DESeq2 version 1.22.2
+## R version 3.5.0
+## DESeq2 version 1.22.2
+# R version 4.0.0
+# DESeq2 version 1.28.0
 # Note that this R version or later is required for DESeq2 version 1.16 or later,
 # in which "the log2 fold change shrinkage is no longer default for the DESeq and nbinomWaldTest functions".
 # DESeq2 version 1.16 introduces "a separate function lfcShrink, which performs log2 fold change shrinkage
@@ -184,7 +187,8 @@ res_lfcShrink <- lfcShrink(dds_fit,
                            contrast = c("condition",
                                         geno1,
                                         geno2),
-                           res = res)
+                           res = res,
+                           type = "normal")
 pdf(paste0(plotDir, "MAplot_", contrast,
            "_FDR", FDRchar, "_L2FC", L2FCchar,
            "_lfcShrink_", featureName, ".pdf"),
@@ -220,8 +224,8 @@ res <- data.frame(featureID = as.character(rownames(res)),
                   padj = as.numeric(res$padj))
 
 # Exclude mitochondrial and chloroplast features
-res_chr <- res[!grepl(pattern = "^ATM", x = res$featureID) &
-               !grepl(pattern = "^ATC", x = res$featureID),]
+res_chr <- res[!grepl(pattern = "^ATMG", x = res$featureID) &
+               !grepl(pattern = "^ATCG", x = res$featureID),]
 # Subset results table to significant (padj < FDRnum)
 # down-regulated genes (log2FoldChange < (L2FC)*-1)
 res_chr_downReg <- res_chr[!is.na(res_chr$padj) &
